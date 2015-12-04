@@ -1,0 +1,23 @@
+{
+  "name": "sql-patch",
+  "version": "0.0.1",
+  "description": "SQL patch application helper.",
+  "keywords": [
+    "sql",
+    "migrate"
+  ],
+  "homepage": "https://github.com/chbrown/sql-patch",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chbrown/sql-patch.git"
+  },
+  "license": "MIT",
+  "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
+  "dependencies": {
+    "minimist": "*",
+    "sqlcmd-pg": "*"
+  },
+  "bin": {
+    "sql-patch": "bin/sql-patch"
+  }
+}

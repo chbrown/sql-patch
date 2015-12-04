@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+var minimist = require('minimist');
+var sqlPatch = require('../');
+
+var argv = minimist(process.argv.slice(2), {
+  boolean: ['help', 'version'],
+  alias: {
+    help: 'h',
+    version: 'v',
+  }
+});
+
+if (argv.help) {
+  console.log([
+    'Usage: sql-patch /path/to/patches/ <variable database config options> [--name _schema_patches]',
+    '',
+    '',
+  ].join('\n'));
+}
+else if (argv.version) {
+  console.log(require('../package').version);
+}
+else {
+  var sqlcmd = require('sqlcmd-pg');
+
+  var patches_table = argv.name || '_schema_patches';
+  delete argv.name;
+  var patches_dirpath = argv._[0];
+  delete argv._;
+
+  if (!argv.database) {
+    console.info('Must provide database name');
+    process.exit(1);
+  }
+
+  var db = new sqlcmd.Connection(argv);
+
+  db.on('log', ev => {
+    console.log('[' + ev.level + '] ' + ev.format, ev.args);
+  });
+
+  db.createDatabaseIfNotExists(function(err) {
+    if (err) throw err;
+
+    console.info('Ensured database is created');
+
+    sqlPatch.executePatches(db, patches_table, patches_dirpath, function(err) {
+      if (err) throw err;
+
+      console.info('Executed patches');
+
+      process.exit();
+    });
+  });
+}
