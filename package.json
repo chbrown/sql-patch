@@ -1,7 +1,7 @@
 {
   "name": "sql-patch",
   "version": "0.1.0",
-  "description": "SQL patch application helper.",
+  "description": "SQL patch migration tool",
   "keywords": [
     "sql",
     "migrate"
