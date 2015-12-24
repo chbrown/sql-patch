@@ -12,6 +12,77 @@ This library (and command line script) provides a tool for applying all of the S
 It's simpler than typical (say, Rails) migrations. Patches are one-way, and SQL only.
 
 
+## CLI example
+
+Create a new database if needed: `createdb buyersdb` (only PostgreSQL for now; see [To-do](#to-do) below)
+
+`migrations/01-initial.sql`:
+
+    CREATE TABLE customer (
+      id SERIAL PRIMARY KEY,
+      fullname TEXT,
+      created TIMESTAMP DEFAULT current_timestamp
+    );
+    INSERT INTO customer (fullname) VALUES ('Lance Moore'), ('Phil Lester');
+
+Running `sql-patch migrations/ --database buyersdb` will create a new table, if needed, to track migration execution. This meta-table will be created in the "buyersdb" database itself, and by default is named "\_schema\_patches". It will then execute the contents of the `migrations/01-initial.sql` file as a single query in that database.
+
+Our table now looks like this:
+
+| id | fullname    | created
+|:---|:------------|:-------------------
+| 1  | Lance Moore | 2015-12-23 21:45:09
+| 2  | Phil Lester | 2015-12-23 21:45:09
+
+Running `sql-patch migrations/ --database buyersdb` again will have no effect, even if you change the contents of `01-initial.sql`. Thus you should never change the contents of a migration once it's been used.
+
+Suppose we later decide a single "fullname" field is sloppy.
+
+`migrations/02-split-name.sql`:
+
+    ALTER TABLE customer
+      ADD COLUMN firstname TEXT,
+      ADD COLUMN lastname TEXT;
+    UPDATE customer SET firstname = substring(fullname from '(.*) '),
+                        lastname  = substring(fullname from ' (.*)');
+    ALTER TABLE customer DROP COLUMN fullname;
+
+Running `sql-patch migrations/ --database buyersdb` now will read the "\_schema\_patches" table, find that `02-split-name.sql` has not been applied, and run it.
+
+Our amended table now looks like this:
+
+| id | created             | firstname | lastname
+|:---|:--------------------|:----------|:--------
+| 1  | 2015-12-23 21:45:09 | Lance     | Moore
+| 2  | 2015-12-23 21:45:09 | Phil      | Lester
+
+
+## API example
+
+This example does pretty much the same thing, even creating the database if needed, from a Node.js script.
+
+    import {Connection} from 'sqlcmd-pg';
+
+    const db = new Connection({
+      host: '127.0.0.1',
+      port: '5432',
+      user: 'postgres',
+      database: 'buyersdb',
+    });
+
+    db.createDatabaseIfNotExists(function(err) {
+      if (err) throw err;
+
+      var patches_dirpath = path.join(__dirname, 'migrations');
+      sqlPatch.executePatches(server.db, '_schema_patches', patches_dirpath, function(err) {
+        if (err) throw err;
+
+        server.default.listen(argv.port, argv.hostname);
+      });
+    });
+
+
+
 ## To-do
 
 * [ ] Support engines other than PostgreSQL
