@@ -61,11 +61,11 @@ Our amended table now looks like this:
 
 This example does pretty much the same thing, even creating the database if needed, from a Node.js script.
 
-    import {Connection} from 'sqlcmd-pg';
+    const path = require('path');
+    const Connection = require('sqlcmd-pg').Connection;
+    const sqlPatch = require('sql-patch');
 
     const db = new Connection({
-      host: '127.0.0.1',
-      port: '5432',
       user: 'postgres',
       database: 'buyersdb',
     });
@@ -74,13 +74,13 @@ This example does pretty much the same thing, even creating the database if need
       if (err) throw err;
 
       var patches_dirpath = path.join(__dirname, 'migrations');
-      sqlPatch.executePatches(server.db, '_schema_patches', patches_dirpath, function(err) {
+      sqlPatch.executePatches(db, '_schema_patches', patches_dirpath, function(err) {
         if (err) throw err;
 
-        server.default.listen(argv.port, argv.hostname);
+        console.log('DONE');
+        process.exit();
       });
     });
-
 
 
 ## To-do
