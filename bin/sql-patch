@@ -7,7 +7,7 @@ var argv = minimist(process.argv.slice(2), {
   alias: {
     help: 'h',
     version: 'v',
-  }
+  },
 });
 
 if (argv.help) {
