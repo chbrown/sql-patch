@@ -25,10 +25,10 @@ in an inconsistent state.
 function executePatches(db, patches_table, patches_dirpath, callback) {
   db.CreateTable(patches_table)
   .ifNotExists()
-  .add([
+  .add(
     'filename TEXT NOT NULL',
-    'applied TIMESTAMP DEFAULT current_timestamp NOT NULL',
-  ])
+    'applied TIMESTAMP DEFAULT current_timestamp NOT NULL'
+  )
   .execute(function(err) {
     if (err) return callback(err);
     fs.readdir(patches_dirpath, function(err, filenames) {
