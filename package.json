@@ -15,7 +15,7 @@
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "dependencies": {
     "minimist": "*",
-    "sqlcmd-pg": "1.1.1"
+    "sqlcmd-pg": "^1.1.1"
   },
   "bin": {
     "sql-patch": "bin/sql-patch"
