@@ -28,8 +28,8 @@ in an inconsistent state.
 @param {string} patches_dirpath - The directory containing .sql files to run as patches
 @param {function} callback - Called whenever an error occurs, or all patches have been executed successfully.
 */
-function executePatches(db: Connection, patches_table: string, patches_dirpath: string,
-                        callback: (error: Error, filenames?: string[]) => void) {
+export function executePatches(db: Connection, patches_table: string, patches_dirpath: string,
+                               callback: (error: Error, filenames?: string[]) => void) {
   db.CreateTable(patches_table)
   .ifNotExists()
   .add(
@@ -84,5 +84,3 @@ function executePatches(db: Connection, patches_table: string, patches_dirpath: 
     })
   })
 }
-
-exports.executePatches = executePatches
