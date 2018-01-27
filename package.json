@@ -14,8 +14,16 @@
   "license": "MIT",
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "dependencies": {
-    "minimist": "*",
-    "sqlcmd-pg": "^1.1.1"
+    "minimist": "1.2.0",
+    "sqlcmd-pg": "3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "^2.6.2"
+  },
+  "scripts": {
+    "prepare": "tsc -d",
+    "clean": "tsc -d --listEmittedFiles | sed 's/^TSFILE: //' | xargs rm -v"
   },
   "bin": {
     "sql-patch": "bin/sql-patch"

@@ -1,5 +1,12 @@
-const fs = require('fs')
-const path = require('path')
+import {readdir, readFile} from 'fs'
+import {join} from 'path'
+
+import {Connection} from 'sqlcmd-pg'
+
+export interface PatchRow {
+  filename: string
+  applied: Date
+}
 
 /**
 Apply SQL patches to a database exactly once.
@@ -20,9 +27,9 @@ in an inconsistent state.
 @param {string} patches_table - The name of the table to (created if needed), which will record the application of patches onto the database.
 @param {string} patches_dirpath - The directory containing .sql files to run as patches
 @param {function} callback - Called whenever an error occurs, or all patches have been executed successfully.
-                  callback: (error: Error, filenames?: string[]) => void
 */
-function executePatches(db, patches_table, patches_dirpath, callback) {
+function executePatches(db: Connection, patches_table: string, patches_dirpath: string,
+                        callback: (error: Error, filenames?: string[]) => void) {
   db.CreateTable(patches_table)
   .ifNotExists()
   .add(
@@ -31,31 +38,30 @@ function executePatches(db, patches_table, patches_dirpath, callback) {
   )
   .execute(err => {
     if (err) return callback(err)
-    fs.readdir(patches_dirpath, (err, filenames) => {
+    readdir(patches_dirpath, (err, filenames) => {
       if (err) return callback(err)
 
       db.Select(patches_table)
-      .execute((err, patches) => {
-        // patches: {filename: string, applied: Date}[]
+      .execute((err, patches: PatchRow[]) => {
         if (err) return callback(err)
-        // applied_filenames: string[]
-        const applied_filenames = patches.map(patch => patch.filename)
+        const applied_filenames: string[] = patches.map(patch => patch.filename)
 
         const unapplied_filenames = filenames.filter(filename => {
           return applied_filenames.indexOf(filename) === -1 && filename.match(/\.sql$/)
         }).sort()
 
-        const newly_applied_filenames = []
+        const newly_applied_filenames: string[] = []
 
-        (function loop() {
+        // this could be an IIFE but TypeScript balks
+        function loop() {
           const unapplied_filename = unapplied_filenames.shift()
           if (unapplied_filename === undefined) {
             // no more filenames we're finished!
             return callback(null, newly_applied_filenames)
           }
           else {
-            const unapplied_filepath = path.join(patches_dirpath, unapplied_filename)
-            fs.readFile(unapplied_filepath, {encoding: 'utf8'}, (err, file_contents) => {
+            const unapplied_filepath = join(patches_dirpath, unapplied_filename)
+            readFile(unapplied_filepath, {encoding: 'utf8'}, (err, file_contents) => {
               if (err) return callback(err)
 
               db.executeSQL(file_contents, [], err => {
@@ -72,7 +78,8 @@ function executePatches(db, patches_table, patches_dirpath, callback) {
               })
             })
           }
-        })()
+        }
+        loop()
       })
     })
   })
