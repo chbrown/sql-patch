@@ -1,4 +1,4 @@
-import {Connection} from 'sqlcmd';
+import {Connection} from 'sqlcmd'
 
 /**
 Apply SQL patches to a database exactly once.
@@ -24,4 +24,4 @@ in an inconsistent state.
 export declare function executePatches(db: Connection,
                                        patches_table: string,
                                        patches_dirpath: string,
-                                       callback: (error: Error, filenames?: string[]) => void): void;
+                                       callback: (error: Error, filenames?: string[]) => void): void

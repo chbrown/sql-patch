@@ -1,5 +1,5 @@
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs')
+const path = require('path')
 
 /**
 Apply SQL patches to a database exactly once.
@@ -29,55 +29,53 @@ function executePatches(db, patches_table, patches_dirpath, callback) {
     'filename TEXT NOT NULL',
     'applied TIMESTAMP DEFAULT current_timestamp NOT NULL'
   )
-  .execute(function(err) {
-    if (err) return callback(err);
-    fs.readdir(patches_dirpath, function(err, filenames) {
-      if (err) return callback(err);
+  .execute(err => {
+    if (err) return callback(err)
+    fs.readdir(patches_dirpath, (err, filenames) => {
+      if (err) return callback(err)
 
       db.Select(patches_table)
-      .execute(function(err, patches) {
+      .execute((err, patches) => {
         // patches: {filename: string, applied: Date}[]
-        if (err) return callback(err);
+        if (err) return callback(err)
         // applied_filenames: string[]
-        var applied_filenames = patches.map(function(patch) {
-          return patch.filename;
-        });
+        const applied_filenames = patches.map(patch => patch.filename)
 
-        var unapplied_filenames = filenames.filter(function(filename) {
-          return applied_filenames.indexOf(filename) === -1 && filename.match(/\.sql$/);
-        }).sort();
+        const unapplied_filenames = filenames.filter(filename => {
+          return applied_filenames.indexOf(filename) === -1 && filename.match(/\.sql$/)
+        }).sort()
 
-        var newly_applied_filenames = [];
+        const newly_applied_filenames = []
 
         (function loop() {
-          var unapplied_filename = unapplied_filenames.shift();
+          const unapplied_filename = unapplied_filenames.shift()
           if (unapplied_filename === undefined) {
-            // no more filenames; we're finished!
-            return callback(null, newly_applied_filenames);
+            // no more filenames we're finished!
+            return callback(null, newly_applied_filenames)
           }
           else {
-            var unapplied_filepath = path.join(patches_dirpath, unapplied_filename);
-            fs.readFile(unapplied_filepath, {encoding: 'utf8'}, function(err, file_contents) {
-              if (err) return callback(err);
+            const unapplied_filepath = path.join(patches_dirpath, unapplied_filename)
+            fs.readFile(unapplied_filepath, {encoding: 'utf8'}, (err, file_contents) => {
+              if (err) return callback(err)
 
-              db.executeSQL(file_contents, [], function(err) {
-                if (err) return callback(err);
+              db.executeSQL(file_contents, [], err => {
+                if (err) return callback(err)
 
                 db.Insert(patches_table)
                 .set({filename: unapplied_filename})
-                .execute(function(err) {
-                  if (err) return callback(err);
+                .execute(err => {
+                  if (err) return callback(err)
 
-                  newly_applied_filenames.push(unapplied_filename);
-                  loop();
-                });
-              });
-            });
+                  newly_applied_filenames.push(unapplied_filename)
+                  loop()
+                })
+              })
+            })
           }
-        })();
-      });
-    });
-  });
+        })()
+      })
+    })
+  })
 }
 
-exports.executePatches = executePatches;
+exports.executePatches = executePatches
