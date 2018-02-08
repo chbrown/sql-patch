@@ -1,6 +1,7 @@
 import {readdir, readFile} from 'fs'
 import {join} from 'path'
 
+import * as minimist from 'minimist'
 import {Connection} from 'sqlcmd-pg'
 
 export interface PatchRow {
@@ -83,4 +84,86 @@ export function executePatches(db: Connection, patches_table: string, patches_di
       })
     })
   })
+}
+
+function printUsageAndExit(error?: string) {
+  console.error('Usage: sql-patch /path/to/patches/ <variable database config options> [--name _schema_patches]')
+  if (error) {
+    console.error()
+    console.error(error)
+  }
+  process.exit(error ? 1 : 0)
+}
+
+/**
+Command line interface (CLI) entry point.
+Parses `process.argv` and runs `executePatches` with the specified options.
+*/
+export function main() {
+  const argv = minimist(process.argv.slice(2), {
+    boolean: ['help', 'version'],
+    default: {
+      name: '_schema_patches'
+    },
+    alias: {
+      help: 'h',
+      version: 'v',
+    },
+  })
+
+  const {help, version,
+         name: patches_table,
+         database, user, password, host, port, ssl} = argv
+  const [patches_dirpath] = argv._
+
+  if (argv.help) {
+    printUsageAndExit()
+  }
+  else if (argv.version) {
+    console.log(require('./package').version)
+  }
+  else {
+    if (!database) {
+      printUsageAndExit('Must provide database name with --database argument.')
+    }
+
+    const db = new Connection({database, user, password, host, port, ssl})
+
+    db.on('log', ev => {
+      console.error(`[${ev.level}] ${ev.format}`, ev.args)
+    })
+
+    db.createDatabaseIfNotExists((err, created) => {
+      if (err) {
+        return printUsageAndExit(err.toString())
+      }
+
+      if (created) {
+        console.error(`Created database "${database}".`)
+      }
+      else {
+        console.error(`Database "${database}" already exists.`)
+      }
+
+      console.error(`Executing patches from "${patches_dirpath}" and recording in "${patches_table}".`)
+
+      executePatches(db, patches_table, patches_dirpath, (err, filenames) => {
+        if (err) {
+          return printUsageAndExit(err.toString())
+        }
+
+        if (filenames.length > 0) {
+          console.error('Applied patches:')
+          filenames.forEach(filename => {
+            console.log(`  ${filename}`)
+          })
+        }
+        else {
+          console.error('Database is already up-to-date; no patches applied.')
+        }
+
+        process.exit()
+      })
+    })
+  }
 }
