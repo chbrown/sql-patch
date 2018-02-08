@@ -1,6 +1,6 @@
 {
   "name": "sql-patch",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "SQL patch migration tool",
   "keywords": [
     "sql",
