@@ -15,13 +15,13 @@
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "dependencies": {
     "minimist": "1.2.0",
-    "sqlcmd": "3.0.2",
-    "sqlcmd-pg": "3.0.0"
+    "sqlcmd": "^3.0.3",
+    "sqlcmd-pg": "^3.0.2"
   },
   "devDependencies": {
     "@types/minimist": "1.2.0",
     "@types/node": "^9.6.14",
-    "typescript": "^2.7.1"
+    "typescript": "^2.8.3"
   },
   "scripts": {
     "prepare": "tsc -d",
