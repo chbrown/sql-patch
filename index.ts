@@ -24,10 +24,12 @@ There is no up / down distinction, only applied / not-yet-applied.
 There is no transaction support, so if it encounters an error, it may end up
 in an inconsistent state.
 
-@param {sqlcmd.Connection} db - A sqlcmd.Connection instance.
-@param {string} patches_table - The name of the table to (created if needed), which will record the application of patches onto the database.
-@param {string} patches_dirpath - The directory containing .sql files to run as patches
-@param {function} callback - Called whenever an error occurs, or all patches have been executed successfully.
+@param db - A sqlcmd.Connection instance.
+@param patches_table - The name of the table to (created if needed), which will
+                       record the application of patches onto the database.
+@param patches_dirpath - The directory containing .sql files to run as patches
+@param callback - Called whenever an error occurs, or all patches have been
+                  executed successfully.
 */
 export function executePatches(db: Connection, patches_table: string, patches_dirpath: string,
                                callback: (error: Error, filenames?: string[]) => void) {
@@ -37,14 +39,14 @@ export function executePatches(db: Connection, patches_table: string, patches_di
     'filename TEXT NOT NULL',
     'applied TIMESTAMP DEFAULT current_timestamp NOT NULL'
   )
-  .execute(err => {
-    if (err) return callback(err)
-    readdir(patches_dirpath, (err, filenames) => {
-      if (err) return callback(err)
+  .execute(createTableErr => {
+    if (createTableErr) return callback(createTableErr)
+    readdir(patches_dirpath, (readdirErr, filenames) => {
+      if (readdirErr) return callback(readdirErr)
 
       db.Select(patches_table)
-      .execute((err, patches: PatchRow[]) => {
-        if (err) return callback(err)
+      .execute((selectErr, patches: PatchRow[]) => {
+        if (selectErr) return callback(selectErr)
         const applied_filenames: string[] = patches.map(patch => patch.filename)
 
         const unapplied_filenames = filenames.filter(filename => {
@@ -62,16 +64,16 @@ export function executePatches(db: Connection, patches_table: string, patches_di
           }
           else {
             const unapplied_filepath = join(patches_dirpath, unapplied_filename)
-            readFile(unapplied_filepath, {encoding: 'utf8'}, (err, file_contents) => {
-              if (err) return callback(err)
+            readFile(unapplied_filepath, {encoding: 'utf8'}, (readFileErr, file_contents) => {
+              if (readFileErr) return callback(readFileErr)
 
-              db.executeSQL(file_contents, [], err => {
-                if (err) return callback(err)
+              db.executeSQL(file_contents, [], executeSQLErr => {
+                if (executeSQLErr) return callback(executeSQLErr)
 
                 db.Insert(patches_table)
                 .set({filename: unapplied_filename})
-                .execute(err => {
-                  if (err) return callback(err)
+                .execute(insertErr => {
+                  if (insertErr) return callback(insertErr)
 
                   newly_applied_filenames.push(unapplied_filename)
                   loop()
@@ -103,7 +105,7 @@ export function main() {
   const argv = minimist(process.argv.slice(2), {
     boolean: ['help', 'version'],
     default: {
-      name: '_schema_patches'
+      name: '_schema_patches',
     },
     alias: {
       help: 'h',
@@ -116,10 +118,10 @@ export function main() {
          database, user, password, host, port, ssl} = argv
   const [patches_dirpath] = argv._
 
-  if (argv.help) {
+  if (help) {
     printUsageAndExit()
   }
-  else if (argv.version) {
+  else if (version) {
     console.log(require('./package').version)
   }
   else {
@@ -133,9 +135,9 @@ export function main() {
       console.error(`[${ev.level}] ${ev.format}`, ev.args)
     })
 
-    db.createDatabaseIfNotExists((err, created) => {
-      if (err) {
-        return printUsageAndExit(err.toString())
+    db.createDatabaseIfNotExists((createDatabaseErr, created) => {
+      if (createDatabaseErr) {
+        return printUsageAndExit(createDatabaseErr.toString())
       }
 
       if (created) {
@@ -147,9 +149,9 @@ export function main() {
 
       console.error(`Executing patches from "${patches_dirpath}" and recording in "${patches_table}".`)
 
-      executePatches(db, patches_table, patches_dirpath, (err, filenames) => {
-        if (err) {
-          return printUsageAndExit(err.toString())
+      executePatches(db, patches_table, patches_dirpath, (executeErr, filenames) => {
+        if (executeErr) {
+          return printUsageAndExit(executeErr.toString())
         }
 
         if (filenames.length > 0) {
