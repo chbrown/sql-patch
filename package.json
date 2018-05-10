@@ -15,6 +15,7 @@
   "author": "Christopher Brown <io@henrian.com> (http://henrian.com)",
   "dependencies": {
     "minimist": "1.2.0",
+    "sqlcmd": "3.0.2",
     "sqlcmd-pg": "3.0.0"
   },
   "devDependencies": {
