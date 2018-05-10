@@ -2,7 +2,8 @@ import {readdir, readFile} from 'fs'
 import {join} from 'path'
 
 import * as minimist from 'minimist'
-import {Connection} from 'sqlcmd-pg'
+import {Connection} from 'sqlcmd'
+import {Connection as PGConnection} from 'sqlcmd-pg'
 
 export interface PatchRow {
   filename: string
@@ -129,7 +130,7 @@ export function main() {
       printUsageAndExit('Must provide database name with --database argument.')
     }
 
-    const db = new Connection({database, user, password, host, port, ssl})
+    const db = new PGConnection({database, user, password, host, port, ssl})
 
     db.on('log', ev => {
       console.error(`[${ev.level}] ${ev.format}`, ev.args)
